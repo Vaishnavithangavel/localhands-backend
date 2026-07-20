@@ -5,6 +5,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 require('dotenv').config();
 
 // Auto-initialize database tables on startup
@@ -39,7 +40,7 @@ const limiter = rateLimit({
 app.use('/api/auth', limiter);
 
 // Static files
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Make io accessible in route controllers
 app.use((req, res, next) => {
