@@ -7,6 +7,10 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
+// Auto-initialize database tables on startup
+const autoInitDb = require('./src/config/autoInitDb');
+autoInitDb();
+
 const app = express();
 const server = http.createServer(app);
 
