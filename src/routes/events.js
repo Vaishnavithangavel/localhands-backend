@@ -18,6 +18,6 @@ router.post('/', authenticate, [
 router.put('/:id', authenticate, eventController.update);
 router.delete('/:id', authenticate, eventController.remove);
 router.post('/:id/register', authenticate, eventController.register);
-router.delete('/:id/register', authenticate, eventController.unregister);
+router.delete('/:id/', authenticate, eventController.unregister);
 
 module.exports = router;

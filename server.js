@@ -12,6 +12,7 @@ const autoInitDb = require('./src/config/autoInitDb');
 autoInitDb();
 
 const app = express();
+app.set('trust proxy', 1); // Trust Render's proxy for rate limiter & IP detection
 const server = http.createServer(app);
 
 // Socket.IO
