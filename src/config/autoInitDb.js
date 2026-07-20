@@ -11,18 +11,34 @@ async function autoInitDb() {
     }
 
     const schema = fs.readFileSync(schemaPath, 'utf8');
-    const statements = schema
-      .split('\n')
-      .filter(line => !line.trim().startsWith('--') && line.trim().length > 0)
-      .join('\n')
-      .replace(/CREATE DATABASE .+?;/g, '')
-      .replace(/USE .+?;/g, '')
-      .replace(/CREATE TABLE (?!IF NOT EXISTS)/g, 'CREATE TABLE IF NOT EXISTS ');
 
-    await pool.query(statements);
-    console.log('Database tables initialized successfully');
+    // Split into individual statements by semicolons, clean each one
+    const statements = schema
+      .split(';')
+      .map(stmt => stmt
+        .split('\n')
+        .filter(line => !line.trim().startsWith('--') && line.trim().length > 0)
+        .join('\n')
+        .trim()
+      )
+      .filter(stmt => stmt.length > 0)
+      .filter(stmt => !/^CREATE DATABASE/i.test(stmt))
+      .filter(stmt => !/^USE /i.test(stmt))
+      .map(stmt => stmt.replace(/^CREATE TABLE (?!IF NOT EXISTS)/i, 'CREATE TABLE IF NOT EXISTS '));
+
+    let executed = 0;
+    for (const stmt of statements) {
+      try {
+        await pool.query(stmt);
+        executed++;
+      } catch (err) {
+        console.warn(`Skipped statement: ${err.message.substring(0, 80)}`);
+      }
+    }
+
+    console.log(`Database tables initialized (${executed} statements executed)`);
   } catch (error) {
-    console.warn('Auto DB init skipped (tables may already exist):', error.message);
+    console.warn('Auto DB init failed:', error.message);
   }
 }
 
