@@ -15,8 +15,9 @@ async function autoInitDb() {
       .split('\n')
       .filter(line => !line.trim().startsWith('--') && line.trim().length > 0)
       .join('\n')
-      .replace(/CREATE TABLE /g, 'CREATE TABLE IF NOT EXISTS ')
-      .replace(/CREATE DATABASE .+?;/g, '');
+      .replace(/CREATE DATABASE .+?;/g, '')
+      .replace(/USE .+?;/g, '')
+      .replace(/CREATE TABLE (?!IF NOT EXISTS)/g, 'CREATE TABLE IF NOT EXISTS ');
 
     await pool.query(statements);
     console.log('Database tables initialized successfully');
