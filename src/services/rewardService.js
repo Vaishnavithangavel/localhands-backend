@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const { admin } = require('../config/firebase');
-const db = admin.firestore();
+let db = null;
+try { db = admin.firestore(); } catch (_) { console.warn('rewardService: Firestore unavailable'); }
 const statsService = require('./statsService');
 
 // Milestones configuration
@@ -43,27 +44,29 @@ exports.incrementCompletedJobs = async (userId, role) => {
       count = res[0]?.count || 0;
     }
 
-    const walletRef = db.collection('wallets').doc(String(userId));
-    const walletSnap = await walletRef.get();
+    if (db) {
+      const walletRef = db.collection('wallets').doc(String(userId));
+      const walletSnap = await walletRef.get();
 
-    if (!walletSnap.exists) {
-      await walletRef.set({
-        userId: Number(userId),
-        balance: 0,
-        cashback_earned: 0,
-        reward_coins: 0,
-        completed_jobs: count,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-    } else {
-      await walletRef.update({
-        completed_jobs: count,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+      if (!walletSnap.exists) {
+        await walletRef.set({
+          userId: Number(userId),
+          balance: 0,
+          cashback_earned: 0,
+          reward_coins: 0,
+          completed_jobs: count,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      } else {
+        await walletRef.update({
+          completed_jobs: count,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      // Check milestones
+      await exports.checkMilestones(userId, count);
     }
-
-    // Check milestones
-    await exports.checkMilestones(userId, count);
 
     // Sync stats
     await statsService.syncUserStatsToFirestore(userId);
@@ -77,6 +80,8 @@ exports.incrementCompletedJobs = async (userId, role) => {
  */
 exports.checkMilestones = async (userId, completedJobsCount) => {
   try {
+    if (!db) return;
+
     const matchedMilestones = MILESTONES.filter(m => completedJobsCount >= m.jobs);
 
     for (const milestone of matchedMilestones) {
@@ -168,6 +173,7 @@ exports.checkMilestones = async (userId, completedJobsCount) => {
  * Scratch card reveal and reward processing
  */
 exports.scratchCard = async (userId, rewardId) => {
+  if (!db) throw new Error('Firestore unavailable - cannot process rewards');
   const rewardRef = db.collection('rewards').doc(rewardId);
   const rewardSnap = await rewardRef.get();
 

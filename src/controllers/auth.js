@@ -192,7 +192,7 @@ exports.updateProfile = async (req, res, next) => {
   try {
     const {
       name, phone, photo_url, date_of_birth, gender,
-      district, state, area, pincode, address, bio,
+      district, area, pincode, address, bio,
       upi_id, bank_account_holder, bank_account_number, bank_ifsc,
       emergency_contact_name, emergency_contact_phone,
       latitude, longitude, skills, languages
@@ -207,7 +207,6 @@ exports.updateProfile = async (req, res, next) => {
     if (date_of_birth !== undefined) { updates.push('date_of_birth = ?'); values.push(date_of_birth); }
     if (gender !== undefined) { updates.push('gender = ?'); values.push(gender); }
     if (district !== undefined) { updates.push('district = ?'); values.push(district); }
-    if (state !== undefined) { updates.push('state = ?'); values.push(state); }
     if (area !== undefined) { updates.push('area = ?'); values.push(area); }
     if (pincode !== undefined) { updates.push('pincode = ?'); values.push(pincode); }
     if (address !== undefined) { updates.push('address = ?'); values.push(address); }
@@ -384,15 +383,17 @@ exports.deleteAccount = async (req, res, next) => {
     await pool.query('DELETE FROM user_profiles WHERE user_id = ?', [userId]);
     await pool.query('DELETE FROM users WHERE id = ?', [userId]);
 
-    // Clean up Firestore
-    const { admin } = require('../config/firebase');
-    const db = admin.firestore();
+    // Clean up Firestore (best-effort)
     try {
-      await db.collection('wallets').doc(String(userId)).delete();
-      const rewardsSnap = await db.collection('rewards').where('userId', '==', Number(userId)).get();
-      rewardsSnap.forEach(doc => doc.ref.delete());
-      const vouchersSnap = await db.collection('vouchers').where('userId', '==', Number(userId)).get();
-      vouchersSnap.forEach(doc => doc.ref.delete());
+      const { admin } = require('../config/firebase');
+      if (admin && admin.firestore) {
+        const db = admin.firestore();
+        await db.collection('wallets').doc(String(userId)).delete();
+        const rewardsSnap = await db.collection('rewards').where('userId', '==', Number(userId)).get();
+        rewardsSnap.forEach(doc => doc.ref.delete());
+        const vouchersSnap = await db.collection('vouchers').where('userId', '==', Number(userId)).get();
+        vouchersSnap.forEach(doc => doc.ref.delete());
+      }
     } catch (_) {}
 
     res.json({ message: 'Account deleted successfully' });
