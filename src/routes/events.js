@@ -11,7 +11,7 @@ router.get('/:id/attendees', authenticate, eventController.getAttendees);
 
 router.post('/', authenticate, [
   body('title').trim().notEmpty().withMessage('Title required'),
-  body('date').isDate().withMessage('Valid date required'),
+  body('date').isISO8601().withMessage('Valid date required (YYYY-MM-DD)'),
   body('time').matches(/^\d{2}:\d{2}(:\d{2})?$/).withMessage('Valid time required')
 ], validate, eventController.create);
 
