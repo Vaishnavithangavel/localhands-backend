@@ -67,6 +67,8 @@ exports.getAll = async (req, res, next) => {
     const pageNum = parseInt(page) || 1;
     const limitNum = parseInt(limit) || 10;
 
+    const showCancelled = req.query.user_id || req.query.helper_id;
+
     let query = `
       SELECT hr.*, c.name as category_name, c.type as category_type,
              p.name as user_name, p.photo_url as user_photo, u.trust_score
@@ -74,7 +76,7 @@ exports.getAll = async (req, res, next) => {
       JOIN help_categories c ON hr.category_id = c.id
       JOIN user_profiles p ON hr.user_id = p.user_id
       JOIN users u ON hr.user_id = u.id
-      WHERE hr.status != 'cancelled'
+      WHERE 1=1
     `;
     let countQuery = `
       SELECT COUNT(*) as total
@@ -82,8 +84,13 @@ exports.getAll = async (req, res, next) => {
       JOIN help_categories c ON hr.category_id = c.id
       JOIN user_profiles p ON hr.user_id = p.user_id
       JOIN users u ON hr.user_id = u.id
-      WHERE hr.status != 'cancelled'
+      WHERE 1=1
     `;
+
+    if (!showCancelled) {
+      query += ' AND hr.status != \'cancelled\'';
+      countQuery += ' AND hr.status != \'cancelled\'';
+    }
     const params = [];
     const countParams = [];
 
