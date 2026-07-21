@@ -6,6 +6,7 @@ const { authenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 
 router.get('/', authenticate, ratingController.getAll);
+router.get('/community', authenticate, ratingController.getCommunity);
 router.get('/user/:userId', authenticate, ratingController.getUserRatings);
 
 router.post('/', authenticate, [
@@ -13,5 +14,10 @@ router.post('/', authenticate, [
   body('to_user_id').isInt().withMessage('Target user required'),
   body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be 1-5')
 ], validate, ratingController.create);
+
+router.post('/community', authenticate, [
+  body('to_user_id').isInt().withMessage('Target user required'),
+  body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be 1-5')
+], validate, ratingController.createCommunity);
 
 module.exports = router;

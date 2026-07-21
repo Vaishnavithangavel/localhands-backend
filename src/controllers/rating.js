@@ -99,6 +99,65 @@ exports.getAll = async (req, res, next) => {
   }
 };
 
+// POST /ratings/community — write a community review (not tied to a help request)
+exports.createCommunity = async (req, res, next) => {
+  try {
+    const { to_user_id, rating, review } = req.body;
+
+    if (req.user.id === to_user_id) {
+      return res.status(400).json({ error: 'Cannot review yourself' });
+    }
+
+    // Check for duplicate
+    const [existing] = await pool.query(
+      'SELECT id FROM community_reviews WHERE from_user_id = ? AND to_user_id = ?',
+      [req.user.id, to_user_id]
+    );
+    if (existing.length > 0) {
+      return res.json({ message: 'You already reviewed this user', already_exists: true });
+    }
+
+    await pool.query(
+      'INSERT INTO community_reviews (from_user_id, to_user_id, rating, review) VALUES (?, ?, ?, ?)',
+      [req.user.id, to_user_id, rating, review || null]
+    );
+
+    res.status(201).json({ message: 'Community review posted' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /ratings/community — fetch all community reviews (paginated)
+exports.getCommunity = async (req, res, next) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+    const offset = (page - 1) * limit;
+
+    const [reviews] = await pool.query(
+      `SELECT r.*,
+              u.name as from_user_name, u.photo_url as from_user_photo,
+              tu.name as to_user_name, tu.photo_url as to_user_photo
+       FROM community_reviews r
+       JOIN user_profiles u ON r.from_user_id = u.user_id
+       JOIN user_profiles tu ON r.to_user_id = tu.user_id
+       ORDER BY r.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+
+    const [[{ total }]] = await pool.query('SELECT COUNT(*) as total FROM community_reviews');
+
+    res.json({
+      reviews,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getUserRatings = async (req, res, next) => {
   try {
     const { userId } = req.params;

@@ -385,3 +385,16 @@ CREATE TABLE IF NOT EXISTS user_badges (
   FOREIGN KEY (badge_id) REFERENCES badges(id) ON DELETE CASCADE,
   UNIQUE KEY unique_user_badge (user_id, badge_id)
 ) ENGINE=InnoDB;
+
+-- Community Reviews (not tied to a help request)
+CREATE TABLE IF NOT EXISTS community_reviews (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  from_user_id INT NOT NULL,
+  to_user_id INT NOT NULL,
+  rating TINYINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  review TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (to_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_to_user (to_user_id)
+) ENGINE=InnoDB;
