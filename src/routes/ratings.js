@@ -20,4 +20,6 @@ router.post('/community', authenticate, [
   body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be 1-5')
 ], validate, ratingController.createCommunity);
 
+router.delete('/community/:id', authenticate, ratingController.deleteCommunity);
+
 module.exports = router;

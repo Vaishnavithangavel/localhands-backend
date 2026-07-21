@@ -158,6 +158,28 @@ exports.getCommunity = async (req, res, next) => {
   }
 };
 
+// DELETE /ratings/community/:id — delete own community review
+exports.deleteCommunity = async (req, res, next) => {
+  try {
+    const [reviews] = await pool.query(
+      'SELECT id, from_user_id FROM community_reviews WHERE id = ?',
+      [req.params.id]
+    );
+
+    if (reviews.length === 0) {
+      return res.status(404).json({ error: 'Review not found' });
+    }
+    if (reviews[0].from_user_id !== req.user.id) {
+      return res.status(403).json({ error: 'You can only delete your own reviews' });
+    }
+
+    await pool.query('DELETE FROM community_reviews WHERE id = ?', [req.params.id]);
+    res.json({ message: 'Review deleted' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getUserRatings = async (req, res, next) => {
   try {
     const { userId } = req.params;

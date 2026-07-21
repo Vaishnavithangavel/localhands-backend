@@ -31,6 +31,7 @@ router.post('/:id/arrived', authenticate, helpRequestController.arrived);
 router.post('/:id/work-started', authenticate, helpRequestController.startWork);
 router.post('/:id/navigation-stop', authenticate, helpRequestController.stopNavigation);
 router.post('/:id/cancel', authenticate, helpRequestController.cancel);
+router.post('/:id/withdraw', authenticate, helpRequestController.withdraw);
 router.post('/:id/save', authenticate, helpRequestController.save);
 router.post('/:id/share', authenticate, helpRequestController.share);
 

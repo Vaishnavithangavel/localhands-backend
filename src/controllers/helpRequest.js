@@ -961,14 +961,39 @@ exports.cancel = async (req, res, next) => {
     );
 
     await pool.query(
-      'UPDATE help_request_applications SET status = ? WHERE help_request_id = ? AND status = ?',
-      ['rejected', req.params.id, 'pending']
+      'UPDATE help_request_applications SET status = ? WHERE help_request_id = ? AND status IN (?, ?, ?, ?, ?)',
+      ['rejected', req.params.id, 'pending', 'accepted', 'started_journey', 'arrived', 'work_started']
     );
 
     // Sync stats
     await statsService.syncUserStatsToFirestore(req.user.id);
 
     res.json({ message: 'Help request cancelled' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.withdraw = async (req, res, next) => {
+  try {
+    const [apps] = await pool.query(
+      'SELECT id, status FROM help_request_applications WHERE help_request_id = ? AND user_id = ?',
+      [req.params.id, req.user.id]
+    );
+
+    if (apps.length === 0) {
+      return res.status(404).json({ error: 'Application not found' });
+    }
+    if (apps[0].status !== 'pending' && apps[0].status !== 'accepted') {
+      return res.status(400).json({ error: 'Cannot withdraw at this stage' });
+    }
+
+    await pool.query(
+      'UPDATE help_request_applications SET status = ? WHERE id = ?',
+      ['rejected', apps[0].id]
+    );
+
+    res.json({ message: 'Application withdrawn' });
   } catch (error) {
     next(error);
   }
