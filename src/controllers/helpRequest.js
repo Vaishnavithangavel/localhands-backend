@@ -716,11 +716,11 @@ const geocodeLocation = async (locationText) => {
 exports.startJourney = async (req, res, next) => {
   try {
     const [application] = await pool.query(
-      'SELECT id FROM help_request_applications WHERE help_request_id = ? AND user_id = ? AND status = ?',
-      [req.params.id, req.user.id, 'accepted']
+      "SELECT id, status FROM help_request_applications WHERE help_request_id = ? AND user_id = ? AND status IN ('accepted', 'started_journey')",
+      [req.params.id, req.user.id]
     );
     if (application.length === 0) {
-      return res.status(404).json({ error: 'No accepted application found' });
+      return res.status(404).json({ error: 'No accepted or active application found' });
     }
 
     // Geocode location if coordinates missing
@@ -739,10 +739,12 @@ exports.startJourney = async (req, res, next) => {
       }
     }
 
-    await pool.query(
-      'UPDATE help_request_applications SET status = ? WHERE id = ?',
-      ['started_journey', application[0].id]
-    );
+    if (application[0].status === 'accepted') {
+      await pool.query(
+        'UPDATE help_request_applications SET status = ? WHERE id = ?',
+        ['started_journey', application[0].id]
+      );
+    }
 
     // Notify request owner
     const [profile] = await pool.query('SELECT name FROM user_profiles WHERE user_id = ?', [req.user.id]);
