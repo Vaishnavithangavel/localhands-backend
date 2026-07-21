@@ -48,7 +48,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
+// Root & Health Check routes (for Render health check & monitoring)
+app.get('/', (req, res) => {
+  res.status(200).send('LocalHands API is running');
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
